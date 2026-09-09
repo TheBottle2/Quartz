@@ -207,7 +207,8 @@ select.modal-input option, select.language-select option { background-color: var
 .shortcut-save-btn:hover { opacity: 0.9; transform: scale(1.02); }
 .shortcut-cancel-btn { background: var(--bg-secondary); color: var(--fg-primary); border: 1px solid var(--border); }
 .shortcut-cancel-btn:hover { background: var(--bg-hover); }
-body.transparent-bg .app, body.transparent-bg .toolbar, body.transparent-bg .sidebar, body.transparent-bg .sidebar-header, body.transparent-bg .sidebar-new-note, body.transparent-bg .editor-pane, body.transparent-bg .editor-header, body.transparent-bg .editor-textarea, body.transparent-bg .preview-pane, body.transparent-bg .backlinks-pane, body.transparent-bg .backlinks-header, body.transparent-bg .modal-content, body.transparent-bg .main-content, body.transparent-bg .calendar-section { background: rgba(30, 30, 30, var(--window-opacity)) !important; }
+body.transparent-bg, body.transparent-bg #root { background: transparent; }
+body.transparent-bg .app, body.transparent-bg .toolbar, body.transparent-bg .sidebar, body.transparent-bg .sidebar-header, body.transparent-bg .sidebar-new-note, body.transparent-bg .editor-pane, body.transparent-bg .editor-header, body.transparent-bg .editor-textarea, body.transparent-bg .preview-pane, body.transparent-bg .backlinks-pane, body.transparent-bg .backlinks-header, body.transparent-bg .modal-content, body.transparent-bg .main-content, body.transparent-bg .calendar-section, body.transparent-bg .sidebar .calendar, body.transparent-bg .editor-toolbar, body.transparent-bg .search-bar, body.transparent-bg .search-mirror { background: rgba(30, 30, 30, var(--window-opacity)) !important; }
 body.transparent-bg .preview-content pre { background: rgba(30, 30, 30, calc(var(--window-opacity) + 0.1)) !important; }
 .sidebar .calendar { padding: var(--spacing); border-top: 1px solid var(--border); background: var(--bg-secondary); }
 .calendar-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
@@ -340,3 +341,14 @@ body.transparent-bg .editor-textarea.with-search { background: transparent !impo
 .search-options { display: flex; gap: 12px; padding: 2px; }
 .search-option { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-secondary); cursor: pointer; user-select: none; }
 .search-option input { accent-color: var(--accent); margin: 0; }
+
+/* ===== Yenilikler penceresi ===== */
+.modal-content.whatsnew-modal { max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; }
+.whatsnew-body { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.whatsnew-entry-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.whatsnew-entry-head .version-badge { margin-left: 0; }
+.whatsnew-date { font-size: 11px; color: var(--fg-muted); font-family: var(--font-mono); }
+.whatsnew-list { margin: 0; padding-left: 20px; font-size: 13px; color: var(--fg-secondary); display: flex; flex-direction: column; gap: 4px; }
+.whatsnew-list li::marker { color: var(--accent); }
+.version-badge.clickable { cursor: pointer; }
+.version-badge.clickable:hover { border-color: var(--accent); color: var(--accent); }

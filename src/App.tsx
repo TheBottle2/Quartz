@@ -5,6 +5,7 @@ import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
 import { BacklinksPane } from './components/BacklinksPane';
 import { GraphModal } from './components/GraphModal';
+import { WhatsNewModal } from './components/WhatsNewModal';
 import { Logo } from './components/Logo';
 import { Icon } from './components/Icon';
 import { getDailyNotePath, getDailyNoteTemplate, extractDailyNoteDates } from './utils/dailyNotes';
@@ -81,6 +82,7 @@ function App() {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [appVersion, setAppVersion] = useState<string>('');
+  const [showWhatsNew, setShowWhatsNew] = useState(false);
   const [recentVaults, setRecentVaults] = useState<string[]>(() => {
     try {
       const stored = localStorage.getItem('recentVaults');
@@ -321,6 +323,14 @@ function App() {
   useEffect(() => {
     getVersion().then(setAppVersion).catch(() => setAppVersion('0.2.12'));
   }, []);
+
+  // Sürüm değiştiyse Yenilikler penceresini bir kez göster (ilk kurulumda değil).
+  useEffect(() => {
+    if (!appVersion) return;
+    const seen = localStorage.getItem('seenVersion');
+    if (seen && seen !== appVersion) setShowWhatsNew(true);
+    localStorage.setItem('seenVersion', appVersion);
+  }, [appVersion]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -669,7 +679,13 @@ function App() {
                 </div>
               </div>
               <footer className="modal-footer">
-                <span className="version-badge footer-version">Quartz v{appVersion}</span>
+                <button
+                  className="version-badge footer-version clickable"
+                  onClick={() => setShowWhatsNew(true)}
+                  title={t('whatsNew')}
+                >
+                  Quartz v{appVersion}
+                </button>
                 <button className="btn primary" onClick={() => setShowSettings(false)}>{t('done')}</button>
               </footer>
             </div>
@@ -684,6 +700,14 @@ function App() {
           files={files}
           onNoteOpen={(name) => loadFile(name.endsWith('.md') ? name : `${name}.md`)}
           lang={lang}
+        />
+      )}
+
+      {showWhatsNew && (
+        <WhatsNewModal
+          lang={lang}
+          t={t}
+          onClose={() => setShowWhatsNew(false)}
         />
       )}
     </div>

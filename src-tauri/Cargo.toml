@@ -1,6 +1,6 @@
 [package]
 name = "quartz"
-version = "0.2.18"
+version = "0.2.19"
 description = "Local-first Markdown knowledge base"
 authors = ["User <user@example.com>"]
 edition = "2021"
