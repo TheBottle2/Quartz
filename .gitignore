@@ -15,3 +15,7 @@ src-tauri/gen/
 # Kişisel veriler (asla repoya girmez)
 vault/
 .env
+
+# İstisna: örnek vault notları (tanıtım amaçlı, özel veri içermez)
+!vault/
+!vault/*.md
