@@ -31,6 +31,11 @@ A local-first, plain-text knowledge base inspired by Obsidian. Built with Tauri 
 | Undo / redo | `Ctrl+Z` / `Ctrl+Shift+Z` |
 | Close dialog | `Esc` |
 
+## Platform support
+
+- **Linux: fully supported and tested** — `.deb`, `.rpm` and `.AppImage` bundles are built from here (Ubuntu 26.04).
+- **Windows / macOS: should work, not tested** — the Tauri config targets all platforms (`"targets": "all"`), so `nsis`/`msi` (Windows) and `dmg` (macOS) builds are expected to work, but no artifacts are produced or verified in this repo. Build on the target OS with `npm run tauri build` and report back.
+
 ## Prerequisites
 
 - **Node.js** 18+ and npm
