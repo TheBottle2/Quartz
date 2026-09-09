@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useCallback, useState } from 'react';
 import { parseMarkdown, writeFile, confirmDialog } from '../api';
 import { useDebounce } from '../hooks/useDebounce';
 import { renderMathInHtml } from '../math';
@@ -47,8 +47,21 @@ export function Editor({
   }, [setShowSearchBar]);
   const syncMirrorScroll = useCallback(() => {
     const ta = textareaRef.current, mirror = mirrorRef.current;
-    if (ta && mirror) { mirror.scrollTop = ta.scrollTop; mirror.scrollLeft = ta.scrollLeft; }
+    if (!ta || !mirror) return;
+    mirror.scrollTop = ta.scrollTop;
+    mirror.scrollLeft = ta.scrollLeft;
+    // Textarea'nın dikey kaydırma çubuğu içerik kutusunu daraltır; mirror'da
+    // aynı oluğu bırakmazsak satır kaymaları tutmaz ve vurgu gittikçe kayar.
+    const gutter = ta.offsetWidth - ta.clientWidth;
+    mirror.style.paddingRight = `${20 + Math.max(0, gutter)}px`;
   }, []);
+
+  // Katman her belirdiğinde/güncellendiğinde kaydırma + oluğu eşitle.
+  // Yoksa textarea kaydırılmışken açılan mirror tepede (scrollTop=0) kalır ve
+  // ilk scroll'a kadar boş/yanlış bölümü işaretler.
+  useLayoutEffect(() => {
+    if (showSearchBar && searchInfo.query.length > 0) syncMirrorScroll();
+  }, [showSearchBar, searchInfo, content, syncMirrorScroll]);
 
   // ---- Undo/Redo (ref tabanlı, dosya değişiminde sıfırlanır) ----
   const historyRef = useRef<HistoryEntry[]>([]);
