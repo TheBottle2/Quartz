@@ -30,8 +30,25 @@ export function Editor({
 }: EditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
   const [previewHtml, setPreviewHtml] = useState('');
   const pendingSave = useRef<{ name: string; text: string } | null>(null);
+  // Bul/değiştir vurgu katmanı verisi (SearchBar'dan beslenir)
+  const [searchInfo, setSearchInfo] = useState<{ query: string; matches: SearchMatch[]; current: number }>(
+    { query: '', matches: [], current: 0 }
+  );
+  const handleMatchesChange = useCallback(
+    (info: { query: string; matches: SearchMatch[]; current: number }) => setSearchInfo(info),
+    []
+  );
+  const handleSearchClose = useCallback(() => {
+    setShowSearchBar(false);
+    setSearchInfo({ query: '', matches: [], current: 0 });
+  }, [setShowSearchBar]);
+  const syncMirrorScroll = useCallback(() => {
+    const ta = textareaRef.current, mirror = mirrorRef.current;
+    if (ta && mirror) { mirror.scrollTop = ta.scrollTop; mirror.scrollLeft = ta.scrollLeft; }
+  }, []);
 
   // ---- Undo/Redo (ref tabanlı, dosya değişiminde sıfırlanır) ----
   const historyRef = useRef<HistoryEntry[]>([]);
@@ -132,7 +149,8 @@ export function Editor({
     const lineHeight = parseFloat(getComputedStyle(ta).lineHeight) || 22;
     const line = ta.value.slice(0, start).split('\n').length - 1;
     ta.scrollTop = Math.max(0, line * lineHeight - ta.clientHeight / 2);
-  }, []);
+    syncMirrorScroll();
+  }, [syncMirrorScroll]);
 
   const replaceCurrent = useCallback((start: number, end: number, replacement: string) => {
     const next = content.slice(0, start) + replacement + content.slice(end);
@@ -255,6 +273,28 @@ export function Editor({
   }
 
   const isPreviewEmpty = !previewHtml.trim();
+  const showMarks = showSearchBar && searchInfo.query.length > 0;
+
+  // Vurgu katmanı: içeriği <mark> parçalarına böler (React otomatik kaçırır).
+  const renderSearchMarks = () => {
+    const { matches, current } = searchInfo;
+    if (matches.length === 0) return content;
+    const out: React.ReactNode[] = [];
+    let last = 0;
+    matches.forEach((m, i) => {
+      const s = Math.max(0, Math.min(m.start, content.length));
+      const e = Math.max(s, Math.min(m.end, content.length));
+      if (s > last) out.push(content.slice(last, s));
+      const piece = content.slice(s, e);
+      // Not: sıfır uzunluklu regex eşleşmesinde boş <mark> yer kaplamaz.
+      out.push(piece
+        ? <mark key={i} className={i === current ? 'current' : undefined}>{piece}</mark>
+        : <mark key={i} className={i === current ? 'current' : undefined} />);
+      last = e;
+    });
+    if (last < content.length) out.push(content.slice(last));
+    return out;
+  };
 
   return (
     <div className="editor-pane" role="main">
@@ -301,18 +341,26 @@ export function Editor({
               <button className="toolbar-btn" onClick={() => wrapLines('> ')} title={t('formatQuote')}><Icon name="quote" /></button>
               <button className="toolbar-btn" onClick={() => wrapLines('    ')} title={t('formatCode')}><Icon name="code" /></button>
             </div>
-            <textarea
-              ref={textareaRef}
-              className="editor-textarea"
-              value={content}
-              onChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder={t('editorPlaceholder')}
-              spellCheck={true}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-            />
+            <div className="editor-textarea-wrap">
+              {showMarks && (
+                <div ref={mirrorRef} className="search-mirror" aria-hidden="true">
+                  {renderSearchMarks()}
+                </div>
+              )}
+              <textarea
+                ref={textareaRef}
+                className={`editor-textarea${showMarks ? ' with-search' : ''}`}
+                value={content}
+                onChange={handleChange}
+                onKeyDown={handleKeyDown}
+                onScroll={syncMirrorScroll}
+                placeholder={t('editorPlaceholder')}
+                spellCheck={true}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+              />
+            </div>
           </div>
         )}
         <div
@@ -343,10 +391,11 @@ export function Editor({
       {showSearchBar && (
         <SearchBar
           content={content}
-          onClose={() => setShowSearchBar(false)}
+          onClose={handleSearchClose}
           onSelect={selectRange}
           onReplaceCurrent={replaceCurrent}
           onReplaceAll={replaceAll}
+          onMatchesChange={handleMatchesChange}
           t={t}
         />
       )}

@@ -10,10 +10,11 @@ interface SearchBarProps {
   onSelect: (start: number, end: number) => void;
   onReplaceCurrent: (start: number, end: number, replacement: string) => void;
   onReplaceAll: (matches: SearchMatch[], replacement: string) => void;
+  onMatchesChange: (info: { query: string; matches: SearchMatch[]; current: number }) => void;
   t: TFunc;
 }
 
-export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onReplaceAll, t }: SearchBarProps) {
+export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onReplaceAll, onMatchesChange, t }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [replaceText, setReplaceText] = useState('');
   const [showReplace, setShowReplace] = useState(false);
@@ -21,6 +22,9 @@ export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onRepl
   const [useRegex, setUseRegex] = useState(false);
   const [wholeWord, setWholeWord] = useState(false);
   const [current, setCurrent] = useState(0);
+  // Artar: kullanıcı Enter/ok ile gezindiğinde. Yazarken imleci oynatmamak
+  // için seçim SADECE bu sayaç değişince yapılır.
+  const [nav, setNav] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { inputRef.current?.focus(); inputRef.current?.select(); }, []);
@@ -48,13 +52,30 @@ export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onRepl
     if (current >= matches.length) setCurrent(Math.max(0, matches.length - 1));
   }, [matches.length, current]);
 
+  // Vurgu katmanını besle (seçim YAPMAZ — yazarken imleç zıplamasın).
   useEffect(() => {
+    onMatchesChange({ query, matches, current });
+  }, [query, matches, current, onMatchesChange]);
+
+  // İmleç SADECE gezinince oynar.
+  useEffect(() => {
+    if (nav === 0) return;
     const m = matches[current];
     if (m) onSelect(m.start, m.end);
-  }, [current, matches, onSelect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nav]);
 
-  const goNext = () => { if (matches.length) setCurrent((current + 1) % matches.length); };
-  const goPrev = () => { if (matches.length) setCurrent((current - 1 + matches.length) % matches.length); };
+  const goNext = () => {
+    if (!matches.length) return;
+    if (nav === 0) { setNav(1); return; } // ilk adım: mevcut eşleşmeyi seç
+    setCurrent((current + 1) % matches.length); setNav((n) => n + 1);
+  };
+  const goPrev = () => {
+    if (!matches.length) return;
+    if (nav === 0) { setCurrent(matches.length - 1); setNav(1); return; } // ilk adım: son eşleşme
+    setCurrent((current - 1 + matches.length) % matches.length); setNav((n) => n + 1);
+  };
+  const resetNav = () => { setCurrent(0); setNav(0); };
 
   return (
     <div
@@ -68,11 +89,13 @@ export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onRepl
           ref={inputRef}
           className="search-input"
           value={query}
-          onChange={(e) => { setQuery(e.target.value); setCurrent(0); }}
+          onChange={(e) => { setQuery(e.target.value); resetNav(); }}
           placeholder={t('searchPlaceholder')}
           onKeyDown={(e) => {
             e.stopPropagation();
-            if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? goPrev() : goNext(); }
+            if (e.key === 'Escape') { onClose(); return; }
+            // İlk Enter mevcut eşleşmeyi seçer, sonrakiler ilerler.
+            if (e.key === 'Enter') { e.preventDefault(); e.shiftKey ? goPrev() : (nav === 0 ? setNav(1) : goNext()); }
           }}
         />
         <span className="search-count">
@@ -98,7 +121,11 @@ export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onRepl
             value={replaceText}
             onChange={(e) => setReplaceText(e.target.value)}
             placeholder={t('replacePlaceholder')}
-            onKeyDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Escape') { onClose(); return; }
+              if (e.key === 'Enter') { e.preventDefault(); const m = matches[current]; if (m) onReplaceCurrent(m.start, m.end, replaceText); }
+            }}
           />
           <button
             className="search-btn"
@@ -113,9 +140,9 @@ export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onRepl
         </div>
       )}
       <div className="search-options">
-        <label className="search-option"><input type="checkbox" checked={caseSensitive} onChange={(e) => setCaseSensitive(e.target.checked)} />{t('caseSensitive')}</label>
-        <label className="search-option"><input type="checkbox" checked={useRegex} onChange={(e) => setUseRegex(e.target.checked)} />{t('useRegex')}</label>
-        <label className="search-option"><input type="checkbox" checked={wholeWord} onChange={(e) => setWholeWord(e.target.checked)} />{t('wholeWord')}</label>
+        <label className="search-option"><input type="checkbox" checked={caseSensitive} onChange={(e) => { setCaseSensitive(e.target.checked); resetNav(); }} />{t('caseSensitive')}</label>
+        <label className="search-option"><input type="checkbox" checked={useRegex} onChange={(e) => { setUseRegex(e.target.checked); resetNav(); }} />{t('useRegex')}</label>
+        <label className="search-option"><input type="checkbox" checked={wholeWord} onChange={(e) => { setWholeWord(e.target.checked); resetNav(); }} />{t('wholeWord')}</label>
       </div>
     </div>
   );
