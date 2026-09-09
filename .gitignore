@@ -11,3 +11,7 @@ src-tauri/gen/
 # Çeşitli
 *.log
 .DS_Store
+
+# Kişisel veriler (asla repoya girmez)
+vault/
+.env
