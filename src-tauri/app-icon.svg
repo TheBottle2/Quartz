@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- 
+    Quartz App Icon
+    A faceted quartz crystal design
+    viewBox: 0 0 1024 1024 (squared with transparency)
+  -->
+  
+  <!-- Crystal Body - Three vertical columns -->
+  <!-- Left column (medium blue) -->
+  <polygon points="368,384 470,384 470,800 368,800" fill="#5f8dd0"/>
+  
+  <!-- Center column (light blue - catches the light) -->
+  <polygon points="470,384 554,384 554,800 470,800" fill="#b6d2f6"/>
+  
+  <!-- Right column (dark blue - shadow side) -->
+  <polygon points="554,384 656,384 656,800 554,800" fill="#33588d"/>
+  
+  <!-- Crystal Top - Three triangular facets meeting at the peak -->
+  <!-- Top left facet -->
+  <polygon points="512,232 368,384 470,384" fill="#82b0ea"/>
+  
+  <!-- Top center facet (brightest - direct light) -->
+  <polygon points="512,232 470,384 554,384" fill="#e3efff"/>
+  
+  <!-- Top right facet -->
+  <polygon points="512,232 554,384 656,384" fill="#547ec4"/>
+</svg>

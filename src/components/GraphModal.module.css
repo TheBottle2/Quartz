@@ -1,0 +1,266 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.modalContent {
+  background: var(--bg-primary, #1a1a1a);
+  border-radius: 12px;
+  width: 95vw;
+  max-width: 1400px;
+  height: 90vh;
+  max-height: 900px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  overflow: hidden;
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  flex-shrink: 0;
+}
+
+.modalHeader h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--fg-primary, #e1e1e1);
+}
+
+.headerControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.controlButton,
+.closeButton {
+  background: transparent;
+  border: none;
+  color: var(--fg-secondary, #888);
+  font-size: 18px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controlButton:hover,
+.closeButton:hover {
+  background: var(--bg-hover, rgba(255, 255, 255, 0.1));
+  color: var(--fg-primary, #e1e1e1);
+}
+
+.controlButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.controlButton svg,
+.closeButton svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+.controlButton[aria-pressed="false"] {
+  opacity: 0.45;
+}
+
+.closeButton {
+  font-size: 20px;
+  padding: 4px 8px;
+}
+
+.filterPanel {
+  display: flex;
+  gap: 16px;
+  padding: 12px 24px;
+  background: var(--bg-secondary, rgba(255, 255, 255, 0.05));
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: flex-start;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.filterGroup label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--fg-secondary, #888);
+  font-weight: 600;
+}
+
+.filterSelect {
+  background: var(--bg-input, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  color: var(--fg-primary, #e1e1e1);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: var(--font-family, inherit);
+  transition: all 0.2s;
+}
+
+.filterSelect:focus {
+  outline: none;
+  border-color: var(--accent, #4A9EFF);
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+.filterSelect[multiple] {
+  height: auto;
+  min-height: 40px;
+}
+
+.dateRange {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dateInput {
+  background: var(--bg-input, rgba(255, 255, 255, 0.08));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 6px;
+  color: var(--fg-primary, #e1e1e1);
+  padding: 6px 10px;
+  font-size: 13px;
+  font-family: var(--font-family, inherit);
+  flex: 1;
+}
+
+.dateInput:focus {
+  outline: none;
+  border-color: var(--accent, #4A9EFF);
+  box-shadow: 0 0 0 2px rgba(74, 158, 255, 0.2);
+}
+
+.stats {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  padding: 4px 8px;
+  font-size: 12px;
+  color: var(--fg-secondary, #888);
+  background: var(--bg-input, rgba(255, 255, 255, 0.05));
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.graphContainer {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-graph, rgba(0, 0, 0, 0.3));
+}
+
+.graphSvg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.graphSvg :global(.nodes) {
+  cursor: pointer;
+}
+
+.graphSvg :global(.nodes circle) {
+  transition: opacity 0.3s ease;
+}
+
+.graphSvg :global(.nodes circle:hover) {
+  stroke: var(--fg-primary, #fff);
+  stroke-width: 3px;
+}
+
+.minimapContainer {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background: var(--bg-secondary, rgba(0, 0, 0, 0.8));
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  padding: 8px;
+}
+
+.minimapSvg {
+  display: block;
+}
+
+.emptyState {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+  font-size: 14px;
+  color: var(--fg-secondary, #888);
+  pointer-events: none;
+}
+
+.legend {
+  display: flex;
+  gap: 16px;
+  padding: 12px 24px;
+  border-top: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--fg-secondary, #888);
+}
+
+.legendColor {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendHelp {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--fg-muted, #666);
+}

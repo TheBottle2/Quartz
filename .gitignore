@@ -1,0 +1,13 @@
+# Bağımlılıklar ve derleme çıktıları
+node_modules/
+dist/
+src-tauri/target/
+src-tauri/gen/
+
+# Dökümanlar (README hariç hiçbir .md yüklenmez)
+*.md
+!README.md
+
+# Çeşitli
+*.log
+.DS_Store
