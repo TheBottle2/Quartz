@@ -254,6 +254,51 @@ async fn delete_file(state: State<'_, VaultState>, name: String) -> Result<(), S
 }
 
 #[command]
+async fn rename_file(state: State<'_, VaultState>, old: String, new: String) -> Result<(), String> {
+    let vault_path = state
+        .path
+        .lock()
+        .unwrap()
+        .clone()
+        .ok_or("No vault opened")?;
+
+    // Yol kaçışlarına karşı koruma: mutlak yol ve `..` yasak, sonuç vault içinde kalmalı.
+    let resolve = |p: &str| -> Result<PathBuf, String> {
+        if p.trim().is_empty() {
+            return Err("Invalid file name".into());
+        }
+        let rel = Path::new(p);
+        if rel.is_absolute() || p.split('/').any(|seg| seg == "..") {
+            return Err("Invalid path".into());
+        }
+        let abs = vault_path.join(rel);
+        if !abs.starts_with(&vault_path) {
+            return Err("Invalid path".into());
+        }
+        Ok(abs)
+    };
+
+    let from = resolve(&old)?;
+    let to = resolve(&new)?;
+
+    if !from.exists() {
+        return Err("File does not exist".into());
+    }
+    if to.exists() {
+        return Err("A file with that name already exists".into());
+    }
+    if let Some(parent) = to.parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::rename(&from, &to).map_err(|e| e.to_string())?;
+
+    let files = scan_vault_files(&vault_path);
+    let link_map = build_link_map(&vault_path, &files);
+    *state.link_map.lock().unwrap() = Some(link_map);
+
+    Ok(())
+}
+#[command]
 async fn select_vault_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use std::sync::mpsc;
 
@@ -286,6 +331,7 @@ fn main() {
             get_all_files,
             create_file,
             delete_file,
+            rename_file,
             select_vault_folder
         ])
         .run(tauri::generate_context!())

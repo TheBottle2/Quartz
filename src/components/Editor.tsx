@@ -18,6 +18,8 @@ interface EditorProps {
   setShowEditor: (show: boolean) => void;
   showSearchBar: boolean;
   setShowSearchBar: (show: boolean) => void;
+  pendingSelect: { file: string; start: number; end: number } | null;
+  onPendingSelectConsumed: () => void;
   t: TFunc;
 }
 
@@ -26,7 +28,8 @@ const MAX_HISTORY = 100;
 
 export function Editor({
   fileName, content, onContentChange, onLinkClick, onDeleteFile, onOpenVault,
-  showEditor, setShowEditor, showSearchBar, setShowSearchBar, t,
+  showEditor, setShowEditor, showSearchBar, setShowSearchBar,
+  pendingSelect, onPendingSelectConsumed, t,
 }: EditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
@@ -164,6 +167,14 @@ export function Editor({
     ta.scrollTop = Math.max(0, line * lineHeight - ta.clientHeight / 2);
     syncMirrorScroll();
   }, [syncMirrorScroll]);
+
+  // Dışarıdan gelen "şu isabete git" isteğini bir kez uygula (arama yönlendirmesi).
+  useEffect(() => {
+    if (pendingSelect && pendingSelect.file === fileName) {
+      selectRange(pendingSelect.start, pendingSelect.end);
+      onPendingSelectConsumed();
+    }
+  }, [pendingSelect, fileName, selectRange, onPendingSelectConsumed]);
 
   const replaceCurrent = useCallback((start: number, end: number, replacement: string) => {
     const next = content.slice(0, start) + replacement + content.slice(end);

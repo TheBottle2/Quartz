@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { readVault, readFile, getAllFiles, createFile, deleteFile, selectVaultFolder, writeFile, confirmDialog } from './api';
+import { readVault, readFile, getAllFiles, createFile, deleteFile, renameFile, selectVaultFolder, writeFile, confirmDialog } from './api';
 import { getVersion } from '@tauri-apps/api/app';
 import { Sidebar } from './components/Sidebar';
 import { Editor } from './components/Editor';
@@ -208,6 +208,37 @@ function App() {
       if (activeFile === fileName) { setActiveFile(null); setContent(''); }
     } catch (err) { console.error('Failed to delete file:', err); }
   }, [activeFile]);
+
+  // Arama isabetine atlama: dosyayı açıp imleci isabetin üstüne koyar.
+  const [pendingSelect, setPendingSelect] = useState<{ file: string; start: number; end: number } | null>(null);
+  const consumePendingSelect = useCallback(() => setPendingSelect(null), []);
+  const handleFileHit = useCallback(async (file: string, start: number, end: number) => {
+    if (file !== activeFile) {
+      try {
+        const fileContent = await readFile(file);
+        setActiveFile(file);
+        setContent(fileContent);
+        setShowEditor(true);
+        setPendingSelect({ file, start, end });
+      } catch (err) { console.error('Failed to open file:', err); }
+    } else {
+      setPendingSelect({ file, start, end });
+    }
+  }, [activeFile]);
+
+  const handleRenameFile = useCallback(async (oldName: string, newName: string) => {
+    if (oldName === newName) return;
+    try {
+      if (files.includes(newName)) {
+        const ok = await confirmDialog(t('renameExists', { name: newName.replace(/\.md$/, '') }));
+        if (!ok) return;
+        await deleteFile(newName);
+      }
+      await renameFile(oldName, newName);
+      setFiles(await getAllFiles());
+      if (activeFile === oldName) setActiveFile(newName);
+    } catch (err) { console.error('Failed to rename file:', err); }
+  }, [files, activeFile, t]);
 
   const handleRefresh = useCallback(async () => {
     if (vaultPath) setFiles(await getAllFiles());
@@ -419,6 +450,7 @@ function App() {
           <>
             <Sidebar
               files={files} activeFile={activeFile} onFileSelect={loadFile} onDeleteFile={handleDeleteFile}
+              onFileHit={handleFileHit} onRenameFile={handleRenameFile}
               onNewNote={handleOpenNewNoteModal} currentCalendarMonth={currentCalendarMonth}
               onCalendarMonthChange={setCurrentCalendarMonth} onOpenDailyNote={handleOpenDailyNote}
               noteDates={noteDates} t={t} locale={locale} showCalendar={showCalendar}
@@ -447,6 +479,7 @@ function App() {
             onDeleteFile={handleDeleteFile} onOpenVault={() => setShowVaultDialog(true)}
             showEditor={showEditor} setShowEditor={setShowEditor}
             showSearchBar={showSearchBar} setShowSearchBar={setShowSearchBar}
+            pendingSelect={pendingSelect} onPendingSelectConsumed={consumePendingSelect}
             t={t}
           />
         </div>

@@ -10,6 +10,8 @@ interface SidebarProps {
   activeFile: string | null;
   onFileSelect: (file: string) => void;
   onDeleteFile: (file: string) => void;
+  onFileHit: (file: string, start: number, end: number) => void;
+  onRenameFile: (oldName: string, newName: string) => void;
   onNewNote: () => void;
   currentCalendarMonth: Date;
   onCalendarMonthChange: (date: Date) => void;
@@ -24,7 +26,7 @@ const folderOf = (f: string) => (f.includes('/') ? f.slice(0, f.lastIndexOf('/')
 const baseOf = (f: string) => (f.includes('/') ? f.slice(f.lastIndexOf('/') + 1) : f);
 
 export function Sidebar({
-  files, activeFile, onFileSelect, onDeleteFile, onNewNote,
+  files, activeFile, onFileSelect, onDeleteFile, onFileHit, onRenameFile, onNewNote,
   currentCalendarMonth, onCalendarMonthChange, onOpenDailyNote, noteDates, t, locale, showCalendar,
 }: SidebarProps) {
   const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(() => localStorage.getItem('calendarCollapsed') === 'true');
@@ -99,23 +101,93 @@ export function Sidebar({
   const searching = q.length > 0;
 
   const nameHits = (f: string) => f.toLowerCase().includes(q);
-  const contentHits = (f: string) => {
-    if (!q) return 0;
-    const text = contents.get(f);
-    if (!text) return 0;
-    return text.toLowerCase().split(q).length - 1;
+  // İçerik isabet konumları (arama yokken boş): yönlendirme + rozet için.
+  const matchPositions = useMemo(() => {
+    const map = new Map<string, { start: number; end: number }[]>();
+    if (!searching) return map;
+    for (const f of sortedFiles) {
+      const text = contents.get(f) || '';
+      const pos: { start: number; end: number }[] = [];
+      if (text && q) {
+        const tl = text.toLowerCase();
+        let i = tl.indexOf(q);
+        while (i !== -1 && pos.length < 500) {
+          pos.push({ start: i, end: i + q.length });
+          i = tl.indexOf(q, i + 1);
+        }
+      }
+      if (pos.length > 0 || f.toLowerCase().includes(q)) map.set(f, pos);
+    }
+    return map;
+  }, [searching, q, sortedFiles, contents]);
+  const fileMatches = (f: string) => !searching || matchPositions.has(f);
+
+  // Aynı dosyaya tekrar tıklayınca isabetler arasında dön.
+  const cycleRef = useRef<{ file: string; idx: number }>({ file: '', idx: -1 });
+  const handleFileClick = (file: string) => {
+    const pos = matchPositions.get(file);
+    if (searching && pos && pos.length > 0) {
+      const idx = cycleRef.current.file === file
+        ? (cycleRef.current.idx + 1) % pos.length
+        : 0;
+      cycleRef.current = { file, idx };
+      onFileHit(file, pos[idx].start, pos[idx].end);
+    } else if (searching && matchPositions.has(file)) {
+      cycleRef.current = { file: '', idx: -1 };
+      onFileHit(file, 0, 0);
+    } else {
+      cycleRef.current = { file: '', idx: -1 };
+      onFileSelect(file);
+    }
   };
-  const fileMatches = (f: string) => !searching || nameHits(f) || contentHits(f) > 0;
+
+  // Satır içi yeniden adlandırma
+  const [renaming, setRenaming] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+  const startRename = (file: string) => {
+    setRenaming(file);
+    setDraft(baseOf(file).replace(/\.md$/, ''));
+  };
+  const commitRename = (file: string) => {
+    setRenaming(null);
+    const name = draft.trim();
+    if (!name || name === baseOf(file).replace(/\.md$/, '')) return;
+    const clean = name.endsWith('.md') ? name : `${name}.md`;
+    const folder = folderOf(file);
+    onRenameFile(file, folder ? `${folder}/${clean}` : clean);
+  };
 
   const renderFile = (file: string, nested: boolean) => {
-    const hits = searching && !nameHits(file) ? contentHits(file) : 0;
+    const pos = matchPositions.get(file) || [];
+    const hits = searching && !nameHits(file) ? pos.length : 0;
+    if (renaming === file) {
+      return (
+        <div key={file} className={`file-item renaming${nested ? ' nested' : ''}`}>
+          <span className="file-icon" aria-hidden="true"><Icon name="pen" size={14} /></span>
+          <input
+            className="rename-input"
+            value={draft}
+            autoFocus
+            onFocus={(e) => e.currentTarget.select()}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              e.stopPropagation();
+              if (e.key === 'Enter') commitRename(file);
+              else if (e.key === 'Escape') setRenaming(null);
+            }}
+            onBlur={() => setRenaming(null)}
+            aria-label={t('renameFile')}
+          />
+        </div>
+      );
+    }
     return (
       <div
         key={file}
         className={`file-item${activeFile === file ? ' active' : ''}${nested ? ' nested' : ''}`}
         role="option"
         aria-selected={activeFile === file}
-        onClick={() => onFileSelect(file)}
+        onClick={() => handleFileClick(file)}
         title={file}
       >
         <span className="file-icon" aria-hidden="true">
@@ -129,18 +201,24 @@ export function Sidebar({
           <span className="file-hits" title={t('contentHits', { count: String(hits) })}>{hits}</span>
         )}
         {activeFile === file && (
-          <button
-            className="btn icon-only"
-            style={{ opacity: 0.6, padding: 4 }}
-            onClick={(e) => handleDeleteFile(e, file)}
-            aria-label={t('deleteFile')}
-            title={t('deleteFile')}
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
+          <span className="file-actions">
+            <button
+              className="file-action-btn"
+              onClick={(e) => { e.stopPropagation(); startRename(file); }}
+              aria-label={t('renameFile')}
+              title={t('renameFile')}
+            >
+              <Icon name="pen" size={12} />
+            </button>
+            <button
+              className="file-action-btn"
+              onClick={(e) => handleDeleteFile(e, file)}
+              aria-label={t('deleteFile')}
+              title={t('deleteFile')}
+            >
+              <Icon name="trash" size={12} />
+            </button>
+          </span>
         )}
       </div>
     );

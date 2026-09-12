@@ -48,6 +48,10 @@ export async function deleteFile(name: string): Promise<void> {
   return invoke('delete_file', { name });
 }
 
+export async function renameFile(oldName: string, newName: string): Promise<void> {
+  return invoke('rename_file', { old: oldName, new: newName });
+}
+
 export async function selectVaultFolder(): Promise<string | null> {
   return invoke('select_vault_folder');
 }

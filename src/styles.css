@@ -382,6 +382,19 @@ body.transparent-bg .editor-textarea.with-search { background: transparent !impo
   font-size: 10px; font-family: var(--font-mono); color: var(--accent);
   background: var(--accent-light); border-radius: 8px; padding: 1px 7px; flex-shrink: 0;
 }
+.file-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+.file-action-btn {
+  background: transparent; border: none; color: var(--fg-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  width: 22px; height: 22px; padding: 0; border-radius: 4px; opacity: 0.7;
+}
+.file-action-btn:hover { background: var(--bg-hover); color: var(--fg-primary); opacity: 1; }
+.file-item.renaming { cursor: default; }
+.rename-input {
+  flex: 1; min-width: 0; background: var(--bg-input); border: 1px solid var(--accent);
+  border-radius: 4px; padding: 3px 8px; color: var(--fg-primary);
+  font-size: 13px; font-family: var(--font-ui); outline: none;
+}
 
 /* ===== Yenilikler penceresi ===== */
 .modal-content.whatsnew-modal { max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; }
