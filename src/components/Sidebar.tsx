@@ -97,6 +97,17 @@ export function Sidebar({
     if (folder) setCollapsed((c) => (c[folder] ? { ...c, [folder]: false } : c));
   }, [activeFile]);
 
+  // Aktif satır ekran dışındaysa görünür alana kaydır (klasör açılınca dahil).
+  const rowRefs = useRef(new Map<string, HTMLDivElement>());
+  useEffect(() => {
+    if (!activeFile) return;
+    // Klasör açılma render'ının ardından koşsun diye bir kare bekle.
+    const id = requestAnimationFrame(() => {
+      rowRefs.current.get(activeFile)?.scrollIntoView({ block: 'nearest' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [activeFile, collapsed, files]);
+
   const q = debouncedQuery.trim().toLowerCase();
   const searching = q.length > 0;
 
@@ -184,6 +195,10 @@ export function Sidebar({
     return (
       <div
         key={file}
+        ref={(el) => {
+          if (el) rowRefs.current.set(file, el);
+          else rowRefs.current.delete(file);
+        }}
         className={`file-item${activeFile === file ? ' active' : ''}${nested ? ' nested' : ''}`}
         role="option"
         aria-selected={activeFile === file}
