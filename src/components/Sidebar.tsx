@@ -8,6 +8,7 @@ import type { TFunc } from '../i18n';
 interface SidebarProps {
   files: string[];
   activeFile: string | null;
+  activeFileContent: string;
   onFileSelect: (file: string) => void;
   onDeleteFile: (file: string) => void;
   onFileHit: (file: string, start: number, end: number) => void;
@@ -26,7 +27,7 @@ const folderOf = (f: string) => (f.includes('/') ? f.slice(0, f.lastIndexOf('/')
 const baseOf = (f: string) => (f.includes('/') ? f.slice(f.lastIndexOf('/') + 1) : f);
 
 export function Sidebar({
-  files, activeFile, onFileSelect, onDeleteFile, onFileHit, onRenameFile, onNewNote,
+  files, activeFile, activeFileContent, onFileSelect, onDeleteFile, onFileHit, onRenameFile, onNewNote,
   currentCalendarMonth, onCalendarMonthChange, onOpenDailyNote, noteDates, t, locale, showCalendar,
 }: SidebarProps) {
   const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(() => localStorage.getItem('calendarCollapsed') === 'true');
@@ -112,12 +113,15 @@ export function Sidebar({
   const searching = q.length > 0;
 
   const nameHits = (f: string) => f.toLowerCase().includes(q);
+  // Aktif dosya için CANLI editör içeriği: disk okuması kaydedilmemiş
+  // yazıları kaçırır, konumlar kayar. Diğer dosyalar diskten (önbellekli).
+  const textOf = (f: string) => (f === activeFile ? activeFileContent : (contents.get(f) || ''));
   // İçerik isabet konumları (arama yokken boş): yönlendirme + rozet için.
   const matchPositions = useMemo(() => {
     const map = new Map<string, { start: number; end: number }[]>();
     if (!searching) return map;
     for (const f of sortedFiles) {
-      const text = contents.get(f) || '';
+      const text = textOf(f);
       const pos: { start: number; end: number }[] = [];
       if (text && q) {
         const tl = text.toLowerCase();
@@ -130,7 +134,8 @@ export function Sidebar({
       if (pos.length > 0 || f.toLowerCase().includes(q)) map.set(f, pos);
     }
     return map;
-  }, [searching, q, sortedFiles, contents]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searching, q, sortedFiles, contents, activeFile, activeFileContent]);
   const fileMatches = (f: string) => !searching || matchPositions.has(f);
 
   // Aynı dosyaya tekrar tıklayınca isabetler arasında dön.

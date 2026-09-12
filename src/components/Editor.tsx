@@ -57,6 +57,18 @@ export function Editor({
     // aynı oluğu bırakmazsak satır kaymaları tutmaz ve vurgu gittikçe kayar.
     const gutter = ta.offsetWidth - ta.clientWidth;
     mirror.style.paddingRight = `${20 + Math.max(0, gutter)}px`;
+    // Satır kaydırma birebir tutsun diye metrikleri textarea'dan kopyala:
+    // tarayıcı/tema ne yaparsa mirror aynısını yapar (tahmin yok).
+    const cs = getComputedStyle(ta);
+    mirror.style.fontFamily = cs.fontFamily;
+    mirror.style.fontSize = cs.fontSize;
+    mirror.style.lineHeight = cs.lineHeight;
+    mirror.style.letterSpacing = cs.letterSpacing;
+    mirror.style.wordSpacing = cs.wordSpacing;
+    mirror.style.tabSize = cs.tabSize;
+    mirror.style.whiteSpace = cs.whiteSpace;
+    mirror.style.overflowWrap = cs.overflowWrap;
+    mirror.style.wordBreak = cs.wordBreak;
   }, []);
 
   // Katman her belirdiğinde/güncellendiğinde kaydırma + oluğu eşitle.

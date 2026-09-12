@@ -449,7 +449,7 @@ function App() {
         {showSidebar && (
           <>
             <Sidebar
-              files={files} activeFile={activeFile} onFileSelect={loadFile} onDeleteFile={handleDeleteFile}
+              files={files} activeFile={activeFile} activeFileContent={content} onFileSelect={loadFile} onDeleteFile={handleDeleteFile}
               onFileHit={handleFileHit} onRenameFile={handleRenameFile}
               onNewNote={handleOpenNewNoteModal} currentCalendarMonth={currentCalendarMonth}
               onCalendarMonthChange={setCurrentCalendarMonth} onOpenDailyNote={handleOpenDailyNote}
