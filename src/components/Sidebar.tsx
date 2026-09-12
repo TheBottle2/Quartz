@@ -1,6 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar } from './Calendar';
-import { confirmDialog } from '../api';
+import { confirmDialog, readFile } from '../api';
+import { useDebounce } from '../hooks/useDebounce';
+import { Icon } from './Icon';
 import type { TFunc } from '../i18n';
 
 interface SidebarProps {
@@ -18,12 +20,51 @@ interface SidebarProps {
   showCalendar: boolean;
 }
 
+const folderOf = (f: string) => (f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '');
+const baseOf = (f: string) => (f.includes('/') ? f.slice(f.lastIndexOf('/') + 1) : f);
+
 export function Sidebar({
   files, activeFile, onFileSelect, onDeleteFile, onNewNote,
   currentCalendarMonth, onCalendarMonthChange, onOpenDailyNote, noteDates, t, locale, showCalendar,
 }: SidebarProps) {
   const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(() => localStorage.getItem('calendarCollapsed') === 'true');
   useEffect(() => { localStorage.setItem('calendarCollapsed', String(isCalendarCollapsed)); }, [isCalendarCollapsed]);
+
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try { return JSON.parse(localStorage.getItem('sidebarCollapsedFolders') || '{}'); }
+    catch { return {}; }
+  });
+  useEffect(() => { localStorage.setItem('sidebarCollapsedFolders', JSON.stringify(collapsed)); }, [collapsed]);
+  const toggleFolder = (folder: string) => setCollapsed((c) => ({ ...c, [folder]: !c[folder] }));
+
+  const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  const debouncedSetQuery = useDebounce(setDebouncedQuery, 300);
+
+  // İçerik önbelleği: sadece arama yapılırken doldurulur, dosya listesi değişince atılır.
+  const cacheRef = useRef<{ files: string[]; map: Map<string, string> }>({ files, map: new Map() });
+  if (cacheRef.current.files !== files) cacheRef.current = { files, map: new Map() };
+  const [contents, setContents] = useState<Map<string, string>>(new Map());
+
+  useEffect(() => {
+    const q = debouncedQuery.trim();
+    if (!q) { setContents(new Map()); return; }
+    let cancelled = false;
+    (async () => {
+      const cached = cacheRef.current.map;
+      const missing = files.filter((f) => !cached.has(f));
+      if (missing.length > 0) {
+        const loaded = await Promise.all(missing.map(async (f) => {
+          try { return [f, await readFile(f)] as const; }
+          catch { return [f, ''] as const; }
+        }));
+        if (cancelled) return;
+        loaded.forEach(([f, text]) => cached.set(f, text));
+      }
+      if (!cancelled) setContents(new Map(cached));
+    })();
+    return () => { cancelled = true; };
+  }, [debouncedQuery, files]);
 
   const handleDeleteFile = async (e: React.MouseEvent, file: string) => {
     e.stopPropagation();
@@ -33,50 +74,151 @@ export function Sidebar({
 
   const sortedFiles = useMemo(() => [...files].sort((a, b) => a.localeCompare(b)), [files]);
 
+  const tree = useMemo(() => {
+    const folders = new Map<string, string[]>();
+    const root: string[] = [];
+    for (const f of sortedFiles) {
+      const folder = folderOf(f);
+      if (!folder) root.push(f);
+      else {
+        if (!folders.has(folder)) folders.set(folder, []);
+        folders.get(folder)!.push(f);
+      }
+    }
+    return { root, folders: [...folders.entries()].sort((a, b) => a[0].localeCompare(b[0])) };
+  }, [sortedFiles]);
+
+  // Aktif dosyanın klasörünü otomatik aç (kullanıcının kapattığını ezmeden: sadece açar).
+  useEffect(() => {
+    if (!activeFile) return;
+    const folder = folderOf(activeFile);
+    if (folder) setCollapsed((c) => (c[folder] ? { ...c, [folder]: false } : c));
+  }, [activeFile]);
+
+  const q = debouncedQuery.trim().toLowerCase();
+  const searching = q.length > 0;
+
+  const nameHits = (f: string) => f.toLowerCase().includes(q);
+  const contentHits = (f: string) => {
+    if (!q) return 0;
+    const text = contents.get(f);
+    if (!text) return 0;
+    return text.toLowerCase().split(q).length - 1;
+  };
+  const fileMatches = (f: string) => !searching || nameHits(f) || contentHits(f) > 0;
+
+  const renderFile = (file: string, nested: boolean) => {
+    const hits = searching && !nameHits(file) ? contentHits(file) : 0;
+    return (
+      <div
+        key={file}
+        className={`file-item${activeFile === file ? ' active' : ''}${nested ? ' nested' : ''}`}
+        role="option"
+        aria-selected={activeFile === file}
+        onClick={() => onFileSelect(file)}
+        title={file}
+      >
+        <span className="file-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+          </svg>
+        </span>
+        <span className="file-name">{(nested ? baseOf(file) : file).replace(/\.md$/, '')}</span>
+        {searching && hits > 0 && (
+          <span className="file-hits" title={t('contentHits', { count: String(hits) })}>{hits}</span>
+        )}
+        {activeFile === file && (
+          <button
+            className="btn icon-only"
+            style={{ opacity: 0.6, padding: 4 }}
+            onClick={(e) => handleDeleteFile(e, file)}
+            aria-label={t('deleteFile')}
+            title={t('deleteFile')}
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        )}
+      </div>
+    );
+  };
+
+  const renderFolder = (folder: string, folderFiles: string[]) => {
+    const visible = searching ? folderFiles.filter(fileMatches) : folderFiles;
+    const folderHit = searching && folder.toLowerCase().includes(q);
+    if (searching && visible.length === 0 && !folderHit) return null;
+    // Aramada isabet varsa klasörü zorla aç; normalde kullanıcı tercihine saygı duy.
+    const isOpen = searching ? true : !collapsed[folder];
+    const shown = searching ? visible : folderFiles;
+    return (
+      <div key={folder} className="folder-group">
+        <button
+          className="folder-row"
+          onClick={() => toggleFolder(folder)}
+          aria-expanded={isOpen}
+          title={isOpen ? t('collapseFolder') : t('expandFolder')}
+        >
+          <svg className={`chevron-icon${isOpen ? '' : ' collapsed'}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+          <span className="folder-icon" aria-hidden="true"><Icon name="folder" size={14} /></span>
+          <span className="folder-name">{folder}</span>
+          <span className="folder-count">{folderFiles.length}</span>
+        </button>
+        {isOpen && shown.map((f) => renderFile(f, true))}
+      </div>
+    );
+  };
+
+  const visibleRoot = searching ? tree.root.filter(fileMatches) : tree.root;
+  const hasFolderResults = tree.folders.some(
+    ([folder, fs]) => fs.some(fileMatches) || folder.toLowerCase().includes(q)
+  );
+  const hasResults = visibleRoot.length > 0 || hasFolderResults;
+
   return (
     <aside className="sidebar" role="navigation" aria-label="File explorer">
       <header className="sidebar-header">
         <span className="sidebar-title">{t('files')}</span>
       </header>
+      <div className="sidebar-search">
+        <span className="sidebar-search-icon" aria-hidden="true"><Icon name="search" size={14} /></span>
+        <input
+          className="sidebar-search-input"
+          value={query}
+          onChange={(e) => { setQuery(e.target.value); debouncedSetQuery(e.target.value); }}
+          placeholder={t('searchVault')}
+          aria-label={t('searchVault')}
+        />
+        {query && (
+          <button
+            className="sidebar-search-clear"
+            onClick={() => { setQuery(''); debouncedSetQuery(''); }}
+            aria-label={t('cancel')}
+            title={t('cancel')}
+          >
+            <Icon name="x" size={12} />
+          </button>
+        )}
+      </div>
       <div className="file-list" role="listbox" aria-label="Markdown files">
         {sortedFiles.length === 0 ? (
           <div className="empty-state" style={{ padding: '16px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: '13px' }}>
             <div className="empty-state-icon">📄</div>
             <div className="empty-state-text">{t('noNotesYet')}</div>
           </div>
+        ) : searching && !hasResults ? (
+          <div className="empty-state" style={{ padding: '16px', textAlign: 'center', color: 'var(--fg-muted)', fontSize: '13px' }}>
+            <div className="empty-state-text">{t('noSearchResults')}</div>
+          </div>
         ) : (
-          sortedFiles.map((file) => (
-            <div
-              key={file}
-              className={`file-item ${activeFile === file ? 'active' : ''}`}
-              role="option"
-              aria-selected={activeFile === file}
-              onClick={() => onFileSelect(file)}
-              title={file}
-            >
-              <span className="file-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                  <polyline points="14 2 14 8 20 8" />
-                </svg>
-              </span>
-              <span className="file-name">{file.replace(/\.md$/, '')}</span>
-              {activeFile === file && (
-                <button
-                  className="btn icon-only"
-                  style={{ opacity: 0.6, padding: 4 }}
-                  onClick={(e) => handleDeleteFile(e, file)}
-                  aria-label={t('deleteFile')}
-                  title={t('deleteFile')}
-                >
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                </button>
-              )}
-            </div>
-          ))
+          <>
+            {visibleRoot.map((f) => renderFile(f, false))}
+            {tree.folders.map(([folder, fs]) => renderFolder(folder, fs))}
+          </>
         )}
       </div>
       {showCalendar && (

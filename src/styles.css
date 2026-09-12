@@ -342,6 +342,47 @@ body.transparent-bg .editor-textarea.with-search { background: transparent !impo
 .search-option { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-secondary); cursor: pointer; user-select: none; }
 .search-option input { accent-color: var(--accent); margin: 0; }
 
+/* ===== Kenar çubuğu: arama + klasör ağacı ===== */
+.sidebar-search {
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+  margin: 8px 12px 4px; padding: 6px 8px;
+  background: var(--bg-input); border: 1px solid var(--border); border-radius: 6px;
+}
+.sidebar-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-alpha); }
+.sidebar-search-icon { color: var(--fg-muted); display: flex; flex-shrink: 0; }
+.sidebar-search-input {
+  flex: 1; min-width: 0; background: transparent; border: none; outline: none;
+  color: var(--fg-primary); font-size: 13px; font-family: var(--font-ui);
+}
+.sidebar-search-input::placeholder { color: var(--fg-muted); }
+.sidebar-search-clear {
+  background: transparent; border: none; color: var(--fg-muted); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2px; border-radius: 4px; flex-shrink: 0;
+}
+.sidebar-search-clear:hover { background: var(--bg-hover); color: var(--fg-primary); }
+.folder-group { margin: 2px 8px; }
+.folder-row {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  padding: 6px 8px; border: none; border-radius: 4px;
+  background: transparent; color: var(--fg-secondary); cursor: pointer;
+  font-size: 12px; font-weight: 600; font-family: var(--font-ui); text-align: left;
+}
+.folder-row:hover { background: var(--bg-hover); color: var(--fg-primary); }
+.folder-row .chevron-icon { transition: transform 0.2s ease; flex-shrink: 0; }
+.folder-row .chevron-icon.collapsed { transform: rotate(-90deg); }
+.folder-icon { color: var(--fg-muted); display: flex; flex-shrink: 0; }
+.folder-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-count {
+  font-size: 10px; font-weight: 500; color: var(--fg-muted);
+  background: var(--bg-tertiary); border-radius: 8px; padding: 1px 7px; flex-shrink: 0;
+}
+.file-item.nested { width: calc(100% - 24px); margin-left: 16px; }
+.file-hits {
+  font-size: 10px; font-family: var(--font-mono); color: var(--accent);
+  background: var(--accent-light); border-radius: 8px; padding: 1px 7px; flex-shrink: 0;
+}
+
 /* ===== Yenilikler penceresi ===== */
 .modal-content.whatsnew-modal { max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; }
 .whatsnew-body { overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
