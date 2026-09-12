@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Calendar } from './Calendar';
 import { confirmDialog, readFile } from '../api';
 import { useDebounce } from '../hooks/useDebounce';
+import { findFoldedMatches, foldCase } from '../utils/search';
 import { Icon } from './Icon';
 import type { TFunc } from '../i18n';
 
@@ -112,26 +113,18 @@ export function Sidebar({
   const q = debouncedQuery.trim().toLowerCase();
   const searching = q.length > 0;
 
-  const nameHits = (f: string) => f.toLowerCase().includes(q);
+  const nameHits = (f: string) => foldCase(f).includes(foldCase(q));
   // Aktif dosya için CANLI editör içeriği: disk okuması kaydedilmemiş
   // yazıları kaçırır, konumlar kayar. Diğer dosyalar diskten (önbellekli).
   const textOf = (f: string) => (f === activeFile ? activeFileContent : (contents.get(f) || ''));
   // İçerik isabet konumları (arama yokken boş): yönlendirme + rozet için.
+  // Katlamalı arama: indisler orijinal metne aittir (Türkçe-İ güvenli).
   const matchPositions = useMemo(() => {
     const map = new Map<string, { start: number; end: number }[]>();
     if (!searching) return map;
     for (const f of sortedFiles) {
-      const text = textOf(f);
-      const pos: { start: number; end: number }[] = [];
-      if (text && q) {
-        const tl = text.toLowerCase();
-        let i = tl.indexOf(q);
-        while (i !== -1 && pos.length < 500) {
-          pos.push({ start: i, end: i + q.length });
-          i = tl.indexOf(q, i + 1);
-        }
-      }
-      if (pos.length > 0 || f.toLowerCase().includes(q)) map.set(f, pos);
+      const pos = findFoldedMatches(textOf(f), q);
+      if (pos.length > 0 || foldCase(f).includes(foldCase(q))) map.set(f, pos);
     }
     return map;
     // eslint-disable-next-line react-hooks/exhaustive-deps

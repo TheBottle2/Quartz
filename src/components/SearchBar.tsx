@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from './Icon';
+import { findFoldedMatches } from '../utils/search';
 import type { TFunc } from '../i18n';
 
 export interface SearchMatch { start: number; end: number; }
@@ -31,6 +32,8 @@ export function SearchBar({ content, onClose, onSelect, onReplaceCurrent, onRepl
 
   const matches = useMemo<SearchMatch[]>(() => {
     if (!query) return [];
+    // Düz metin + duyarsız: katlamalı arama (Türkçe-İ güvenli, indisler orijinal metne ait).
+    if (!useRegex && !wholeWord && !caseSensitive) return findFoldedMatches(content, query);
     try {
       const escaped = useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       const pattern = wholeWord ? `\\b(?:${escaped})\\b` : escaped;

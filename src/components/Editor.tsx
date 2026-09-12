@@ -34,6 +34,7 @@ export function Editor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const previewRef = useRef<HTMLDivElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
+  const composingRef = useRef(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const pendingSave = useRef<{ name: string; text: string } | null>(null);
   // Bul/değiştir vurgu katmanı verisi (SearchBar'dan beslenir)
@@ -187,6 +188,21 @@ export function Editor({
       onPendingSelectConsumed();
     }
   }, [pendingSelect, fileName, selectRange, onPendingSelectConsumed]);
+
+  // Bayat programatik seçimi temizle: sorgu/seçenek değişince isabet kümesi
+  // yenilenir; eski mavi seçim ekranda asılı kalır ve "yanlış bölge" gibi
+  // görünür. Gezinmede matches referansı AYNI kalır → dokunulmaz. Yazarken
+  // imleç zaten çöküktür → no-op. IME birleşimi sırasında ASLA dokunma.
+  const prevMatchesRef = useRef<SearchMatch[] | null>(null);
+  useEffect(() => {
+    const prev = prevMatchesRef.current;
+    prevMatchesRef.current = searchInfo.matches;
+    if (prev === null || prev === searchInfo.matches || composingRef.current) return;
+    const ta = textareaRef.current;
+    if (ta && ta.selectionStart !== ta.selectionEnd) {
+      ta.setSelectionRange(ta.selectionStart, ta.selectionStart);
+    }
+  }, [searchInfo]);
 
   const replaceCurrent = useCallback((start: number, end: number, replacement: string) => {
     const next = content.slice(0, start) + replacement + content.slice(end);
@@ -390,6 +406,8 @@ export function Editor({
                 onChange={handleChange}
                 onKeyDown={handleKeyDown}
                 onScroll={syncMirrorScroll}
+                onCompositionStart={() => { composingRef.current = true; }}
+                onCompositionEnd={() => { composingRef.current = false; }}
                 placeholder={t('editorPlaceholder')}
                 spellCheck={true}
                 autoComplete="off"
