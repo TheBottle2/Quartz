@@ -391,7 +391,7 @@ function App() {
             <Icon name="menu" />
           </button>
           <Logo size={18} />
-          <span className="toolbar-title">{vaultPath ? vaultPath.split('/').pop() : 'Quartz'}</span>
+          <span className="toolbar-title">{vaultPath ? vaultPath.split('/').pop() : 'Quartzite'}</span>
           {appVersion && <span className="version-badge">v{appVersion}</span>}
         </div>
         <div className="toolbar-right">
@@ -684,7 +684,7 @@ function App() {
                   onClick={() => setShowWhatsNew(true)}
                   title={t('whatsNew')}
                 >
-                  Quartz v{appVersion}
+                  Quartzite v{appVersion}
                 </button>
                 <button className="btn primary" onClick={() => setShowSettings(false)}>{t('done')}</button>
               </footer>

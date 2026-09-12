@@ -1,6 +1,6 @@
 # Markdown Guide
 
-Quick reference for Markdown syntax supported in Quartz.
+Quick reference for Markdown syntax supported in Quartzite.
 
 ## Headings
 

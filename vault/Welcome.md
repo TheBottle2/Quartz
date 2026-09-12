@@ -1,4 +1,4 @@
-# Welcome to Quartz
+# Welcome to Quartzite
 
 This is your **vault** — a folder of plain-text Markdown files.
 

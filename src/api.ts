@@ -54,7 +54,7 @@ export async function selectVaultFolder(): Promise<string | null> {
 
 export async function confirmDialog(message: string): Promise<boolean> {
   try {
-    return await confirm(message, { title: 'Quartz', kind: 'warning' });
+    return await confirm(message, { title: 'Quartzite', kind: 'warning' });
   } catch (err) {
     console.error('Native dialog failed, falling back to window.confirm:', err);
     return window.confirm(message);

@@ -2398,8 +2398,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd348ff538bc9caeda7ee8cad2d1d48236a1f443c1fa3913c6a02fe0043b1dd3"
 
 [[package]]
-name = "quartz"
-version = "0.2.19"
+name = "quartzite"
+version = "0.2.20"
 dependencies = [
  "once_cell",
  "pulldown-cmark",

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Quartz",
-  "version": "0.2.19",
-  "identifier": "com.quartz.app",
+  "productName": "Quartzite",
+  "version": "0.2.20",
+  "identifier": "com.quartzite.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",

@@ -1,4 +1,4 @@
-# Quartz
+# Quartzite
 
 A local-first, plain-text knowledge base inspired by Obsidian. Built with Tauri v2, React, TypeScript, and Rust.
 
@@ -62,7 +62,7 @@ npm run tauri build
 Bundles land in `src-tauri/target/release/bundle/` (`.deb`, `.rpm`, `.AppImage`). Install e.g. with:
 
 ```bash
-sudo dpkg -i src-tauri/target/release/bundle/deb/Quartz_<version>_amd64.deb
+sudo dpkg -i src-tauri/target/release/bundle/deb/Quartzite_<version>_amd64.deb
 ```
 
 The displayed app version is read at runtime from `src-tauri/tauri.conf.json` — bump `package.json`, `tauri.conf.json` and `src-tauri/Cargo.toml` together when releasing.

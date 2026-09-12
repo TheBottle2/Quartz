@@ -1,6 +1,6 @@
 # Workflow Ideas
 
-Ways to use Quartz for different workflows.
+Ways to use Quartzite for different workflows.
 
 ## Zettelkasten
 
